@@ -1,17 +1,13 @@
 #include "logger.h"
-int main() 
+int main()
 {
-        Logger logger("example.log", true, true, true);
+        Logger ua(nullptr);
 
-        logger.logf(Logger::INFO, __FILE__, __LINE__, "This is an informational message.");
-        logger.logf(Logger::WARNING, __FILE__, __LINE__, "This is a warning message.");
-        logger.logf(Logger::ERROR, __FILE__, __LINE__, "This is an error message.");
-        logger.logf(Logger::DEBUG, __FILE__, __LINE__, "This is a debug message.");
+        ua.Log(logLevel::INFO, __FILE__, __LINE__, "This is an informational message.");
+        ua.Log(logLevel::WARNING, __FILE__, __LINE__, "This is a warning message.");
 
-        logger.logf(Logger::INFO, nullptr, 0, "This message has no source information.");
-
-        int someValue = 42;
-        logger.logf(Logger::INFO, __FILE__, __LINE__, "The answer to everything is: %d", someValue);
-
+        ua.Log(logLevel::ERROR, __FILE__, __LINE__, "This is an error message.");
+        Logger uaa("example.log");
+        uaa.Log(logLevel::INFO, __FILE__, __LINE__, "info message");
         return 0;
 }

@@ -133,7 +133,7 @@ public:
         return args_iterator{argc_, argv_, optstr_, optind, argument()};
     }
 
-    [[nodiscard]]const args_iterator begin() const
+    [[nodiscard]]args_iterator begin() const
     {
         optind = 0;
         return args_iterator{argc_, argv_, optstr_, optind, argument()};
@@ -144,7 +144,7 @@ public:
         return args_iterator{argc_, nullptr, nullptr, argc_, argument()};
     }
 
-    [[nodiscard]]const args_iterator end() const
+    [[nodiscard]]args_iterator end() const
     {
         return args_iterator{argc_, nullptr, nullptr, argc_, argument()};
     }

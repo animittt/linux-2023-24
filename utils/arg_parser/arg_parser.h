@@ -62,7 +62,8 @@ public:
 
                 if(optind < _argc && _current_opt == -1)
                 {
-                    _arg._value = _argv[optind];
+                    _arg._key.clear();
+                    _arg._key = _argv[optind];
                     std::cout << _arg._value.value();
                     ++optind;
                     _index = optind;
@@ -94,7 +95,8 @@ public:
 
                 if(optind < _argc && _current_opt == -1)
                 {
-                    _arg._value = _argv[optind];
+                    _arg._key.clear();
+                    _arg._key = _argv[optind];
                     ++optind;
                 }
 

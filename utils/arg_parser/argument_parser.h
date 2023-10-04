@@ -8,17 +8,14 @@
 #include <cstdlib>
 #include "argument.h"
 
-extern char* optarg;
-extern int optind, opterr, optopt;
-
 class argument_parser
 {
 private:
     char** argv_;
     int argc_;
     const char* optstr_;
-public:
 
+public:
     class args_iterator
     {
     private:
@@ -28,6 +25,7 @@ public:
         char _current_opt;
         argument _arg;
         const char* _optstr;
+
     public:
         using iterator_category = std::forward_iterator_tag;
         using difference_type   = std::ptrdiff_t;
@@ -36,6 +34,7 @@ public:
         using reference         = argument&;
 
         void parse();
+
         args_iterator(int, char**, const char*, int);
 
         args_iterator& operator++();

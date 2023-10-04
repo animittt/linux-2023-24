@@ -1,6 +1,10 @@
 #include <iostream>
 #include "argument_parser.h"
 #include "argument.h"
+
+extern char* optarg;
+extern int optind, opterr, optopt;
+
 void argument_parser::args_iterator::parse()
 {
     if (_argv != nullptr && _index < _argc)
@@ -8,7 +12,6 @@ void argument_parser::args_iterator::parse()
         _index = optind;
         if(_current_opt != -1)
         {
-
             _current_opt = (char)getopt(_argc, _argv, _optstr);
             if (_current_opt != -1)
             {
@@ -23,7 +26,6 @@ void argument_parser::args_iterator::parse()
 
         if(optind < _argc && _current_opt == -1)
         {
-            _arg._key.clear();
             _arg._key = _argv[optind];
             ++optind;
             _index = optind;

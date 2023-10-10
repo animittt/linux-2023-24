@@ -27,8 +27,8 @@ void argument_parser::args_iterator::parse()
         if(optind < _argc && _current_opt == -1)
         {
             _arg._key = _argv[optind];
-            ++optind;
             _index = optind;
+            ++optind;
         }
 
         if(_current_opt == '?')

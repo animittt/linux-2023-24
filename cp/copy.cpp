@@ -3,19 +3,19 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <ftw.h>
-#include <algorithm>
 #include <vector>
 #include <ftw.h>
 #include <sys/stat.h>
 #include<bits/stdc++.h>
+#include <dirent.h>
 #include <arg_parser/argument_parser.h>
 #include <logging/logger.h>
 
 const std::size_t buffer_size = 4096;
 const char* destination;
-bool recursive;
-bool force;
-bool noOverwrite;
+bool recursive = false;
+bool force = false;
+bool noOverwrite = false;
 
 void copyFile(const char* source, const char* dest)
 {
@@ -42,16 +42,27 @@ void copyFile(const char* source, const char* dest)
             sourceName = "/" + source_str;
         }
         std::string fullPath = std::string(dest) + sourceName;
-        file_to_id = open(fullPath.c_str(), O_CREAT | O_RDWR, copy_to_mode);
+        file_to_id = open(fullPath.c_str(), O_CREAT | O_WRONLY, 0755);
     }
     else
-        file_to_id = open(dest, O_CREAT | O_RDWR  | O_TRUNC, copy_to_mode);
-    if(file_from_id == -1)
     {
-        LOG_ERROR("open ");
-        exit(EXIT_FAILURE);
+        if(noOverwrite)
+        {
+            file_to_id = open(dest, O_CREAT | O_WRONLY, copy_to_mode);
+        }
+        else
+        {
+            file_to_id = open(dest, O_CREAT | O_WRONLY | O_TRUNC, copy_to_mode);
+        }
+        if(file_to_id == -1)
+        {
+            std::cout << dest << "\n";
+            LOG_ERROR("open ");
+            exit(EXIT_FAILURE);
+        }
     }
-    if(file_to_id == -1)
+
+    if(file_from_id == -1)
     {
         LOG_ERROR("open ");
         exit(EXIT_FAILURE);
@@ -75,9 +86,9 @@ void copyFile(const char* source, const char* dest)
     close(file_to_id);
     close(file_from_id);
 }
-bool madeDir = false;
 int ftw_callback(const char* source, const struct stat* sb, int typeflag)
 {
+    static bool madeDir = false;
     static int counter = 0;
     static std::string newDirectory;
     if(counter == 0)
@@ -129,7 +140,6 @@ int ftw_callback(const char* source, const struct stat* sb, int typeflag)
             destName = "/" + dest_str;
         }
         newDirectory = destination + destName;
-        constexpr mode_t copy_to_mode = S_IRUSR | S_IXUSR | S_IRGRP | S_IROTH;
         mkdir(newDirectory.c_str(),0755 );
     }
     return 0;
@@ -146,12 +156,46 @@ void copyDirectory(const char* source, const char* dest)
     ftw(source, ftw_callback, 1);
     destination = originalDestination;
 }
+bool removeDirectory(const char* path)
+{
+    DIR* dir = opendir(path);
+    if (!dir)
+    {
+        return false;
+    }
+
+    struct dirent* entry;
+    while ((entry = readdir(dir)) != nullptr)
+    {
+        if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0)
+        {
+            std::string fullPath = std::string(path) + "/" + entry->d_name;
+            struct stat statBuf{};
+            if (stat(fullPath.c_str(), &statBuf) == 0)
+            {
+                if (S_ISDIR(statBuf.st_mode))
+                {
+                    removeDirectory(fullPath.c_str());
+                }
+                else
+                {
+                    remove(fullPath.c_str());
+                }
+            }
+        }
+    }
+
+    closedir(dir);
+
+    if (rmdir(path) != 0)
+    {
+        return false;
+    }
+    return true;
+}
 
 int main(int argc, char** argv)
 {
-    recursive = false;
-    force = false;
-    noOverwrite = false;
     if(argc < 3)
     {
         LOG_ERROR("wrong arguments ");
@@ -176,27 +220,54 @@ int main(int argc, char** argv)
         }
         else
         {
-            if(it->_key != argv[argc - 1])
-            {
-                arguments.push_back(it->_key);
-            }
-            else
-                break;
+            arguments.push_back(it->_key);
         }
     }
-    if(noOverwrite)
-        force = false;
-    destination = argv[argc - 1];
-    struct stat fileStat{};
-    int res = stat(destination, &fileStat);
-    if(res != 0)
+    if(arguments.size() < 2)
     {
-        LOG_FATAL("vat es ara?");
+        LOG_ERROR("wrong arguments ");
+        exit(EXIT_FAILURE);
     }
-    if(arguments.size() > 1 && S_ISREG(fileStat.st_mode))
+    destination = argv[argc - 1];
+    arguments.pop_back();
+    struct stat fileStat{};
+    struct stat fileStat2{};
+    int res = stat(destination, &fileStat);
+    stat(arguments[0].c_str(), &fileStat2);
+
+    if(res != 0 && arguments.size() == 1 && S_ISREG(fileStat2.st_mode))
+        open(destination, O_CREAT | O_WRONLY | O_TRUNC, 0755);
+    else if(res != 0 && arguments.size() == 1 && S_ISDIR(fileStat2.st_mode))
+    {
+        if(std::string(destination).find_last_of('.') == std::string::npos)
+            mkdir(destination, 0755);
+        else
+        {
+            LOG_ERROR(std::string(destination) + " is not a directory");
+            exit(EXIT_FAILURE);
+        }
+    }
+    else if(res != 0 && arguments.size() > 1)
     {
         LOG_ERROR(std::string(destination) + " is not a directory");
         exit(EXIT_FAILURE);
+    }
+    res = stat(destination, &fileStat);
+    if(res != 0)
+    {
+        LOG_FATAL("couldn't open" + std::string(destination));
+    }
+    if((arguments.size() > 1 || S_ISDIR(fileStat2.st_mode)) && S_ISREG(fileStat.st_mode))
+    {
+        LOG_ERROR(std::string(destination) + " is not a directory");
+        exit(EXIT_FAILURE);
+    }
+    if (S_ISDIR(fileStat.st_mode)) {
+        if (force)
+        {
+            removeDirectory(destination);
+            mkdir(destination, 0755);
+        }
     }
     for(const auto & argument : arguments)
     {

@@ -39,8 +39,9 @@ public:
 
         args_iterator& operator++();
 
-        value_type operator*();
+        reference operator*();
 
+        pointer operator->();
         bool operator!=(const args_iterator& other) const;
 
         bool operator==(const args_iterator& other) const;

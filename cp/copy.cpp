@@ -15,7 +15,6 @@ const std::size_t buffer_size = 4096;
 const char* destination;
 bool recursive = false;
 bool force = false;
-bool noOverwrite = false;
 
 void copyFile(const char* source, const char* dest)
 {
@@ -46,14 +45,7 @@ void copyFile(const char* source, const char* dest)
     }
     else
     {
-        if(noOverwrite)
-        {
-            file_to_id = open(dest, O_CREAT | O_WRONLY, copy_to_mode);
-        }
-        else
-        {
-            file_to_id = open(dest, O_CREAT | O_WRONLY | O_TRUNC, copy_to_mode);
-        }
+        file_to_id = open(dest, O_CREAT | O_WRONLY | O_TRUNC, copy_to_mode);
         if(file_to_id == -1)
         {
             std::cout << dest << "\n";
@@ -61,7 +53,6 @@ void copyFile(const char* source, const char* dest)
             exit(EXIT_FAILURE);
         }
     }
-
     if(file_from_id == -1)
     {
         LOG_ERROR("open ");
@@ -86,6 +77,7 @@ void copyFile(const char* source, const char* dest)
     close(file_to_id);
     close(file_from_id);
 }
+
 int ftw_callback(const char* source, const struct stat* sb, int typeflag)
 {
     static bool madeDir = false;
@@ -144,6 +136,7 @@ int ftw_callback(const char* source, const struct stat* sb, int typeflag)
     }
     return 0;
 }
+
 void copyDirectory(const char* source, const char* dest)
 {
     const char* originalDestination = destination;  // Save the original destination
@@ -156,6 +149,7 @@ void copyDirectory(const char* source, const char* dest)
     ftw(source, ftw_callback, 1);
     destination = originalDestination;
 }
+
 bool removeDirectory(const char* path)
 {
     DIR* dir = opendir(path);
@@ -163,7 +157,6 @@ bool removeDirectory(const char* path)
     {
         return false;
     }
-
     struct dirent* entry;
     while ((entry = readdir(dir)) != nullptr)
     {
@@ -208,11 +201,6 @@ int main(int argc, char** argv)
         if(it->_key == "r")
         {
             recursive = true;
-        }
-        else if(it->_key == "n")
-        {
-            noOverwrite = true;
-            force = false;
         }
         else if(it->_key == "f")
         {

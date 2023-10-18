@@ -26,7 +26,7 @@ void argument_parser::args_iterator::parse()
 
         if(optind < _argc && _current_opt == -1)
         {
-            _arg._key = _argv[optind];
+            _arg._key= _argv[optind];
             _index = optind;
             ++optind;
         }
@@ -51,7 +51,7 @@ argument_parser::args_iterator&  argument_parser::args_iterator::operator++()
     parse();
     return *this;
 }
-argument_parser::args_iterator::value_type argument_parser::args_iterator::operator*()
+argument_parser::args_iterator::reference argument_parser::args_iterator::operator*()
 {
     return _arg;
 }
@@ -89,4 +89,8 @@ argument_parser::args_iterator argument_parser::end()
 
 [[nodiscard]]argument_parser::args_iterator argument_parser::end() const {
     return args_iterator{argc_, nullptr, nullptr, argc_};
+}
+
+argument_parser::args_iterator::pointer argument_parser::args_iterator::operator->() {
+    return &_arg;
 }

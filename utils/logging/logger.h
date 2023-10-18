@@ -7,9 +7,10 @@
 #include <string>
 #include <iomanip>
 
-#define LOG(level, message) Log(level, message, __FILE__, __func__, __LINE__)
-#define logging_message "[" << std::put_time(timeInfo, "%T") << "] " << "[" << FILE << ":" << FUNC << ":" << LINE << "]" << " [" << LogLevelStr(level) << "] "<< message
-
+#define LOG_INFO(message) getLogging().Log(INFO, message, __FILE__, __func__, __LINE__)
+#define LOG_WARNING(message) getLogging().Log(WARNING, message, __FILE__, __func__, __LINE__)
+#define LOG_ERROR(message) getLogging().Log(ERROR, message, __FILE__, __func__, __LINE__)
+#define LOG_FATAL(message) getLogging().Log(FATAL, message, __FILE__, __func__, __LINE__)
 enum  logLevel
 {
     INFO, WARNING, ERROR, FATAL, DEBUG
@@ -24,9 +25,9 @@ private:
 
 public:
     explicit Logger(const char* filename) :
-    outf(filename)
-    , out(filename ? outf : std::cout)
-    , colored((filename == nullptr))
+            outf(filename)
+            , out(filename ? outf : std::cout)
+            , colored((filename == nullptr))
     {
     }
     ~Logger()
@@ -56,15 +57,31 @@ public:
     {
         std::time_t currentTime = std::time(nullptr);
         std::tm* timeInfo = std::localtime(&currentTime);
-
         if (colored)
         {
             out << getColor(level)
-                << logging_message
-                << getColor(logLevel::INFO) <<'\n';
+                << "[" << std::put_time(timeInfo, "%T")
+                << "] " << "[" << FILE
+                << ":" << FUNC
+                << ":" << LINE
+                << "]" << " [" << LogLevelStr(level)
+                << "] "<< message
+
+                    << getColor(logLevel::INFO) <<'\n';
         }
         else
-            out << logging_message << '\n';
+            out << "[" << std::put_time(timeInfo, "%T")
+                << "] " << "[" << FILE
+                << ":" << FUNC
+                << ":" << LINE
+                << "]" << " [" << LogLevelStr(level)
+                << "] "<< message
+                << '\n';
+        if(level == FATAL)
+        {
+            exit(EXIT_FAILURE);
+        }
+
     }
     static char const* getColor(logLevel level)
     {
@@ -86,3 +103,8 @@ public:
     }
 };
 
+inline Logger& getLogging()
+{
+    static Logger log(nullptr);
+    return log;
+}

@@ -11,8 +11,6 @@
 #define LOG_WARNING(message) getLogging().Log(WARNING, message, __FILE__, __func__, __LINE__)
 #define LOG_ERROR(message) getLogging().Log(ERROR, message, __FILE__, __func__, __LINE__)
 #define LOG_FATAL(message) getLogging().Log(FATAL, message, __FILE__, __func__, __LINE__)
-#define logging_message "[" << std::put_time(timeInfo, "%T") << "] " << "[" << FILE << ":" << FUNC << ":" << LINE << "]" << " [" << LogLevelStr(level) << "] "<< message
-
 enum  logLevel
 {
     INFO, WARNING, ERROR, FATAL, DEBUG
@@ -27,9 +25,9 @@ private:
 
 public:
     explicit Logger(const char* filename) :
-    outf(filename)
-    , out(filename ? outf : std::cout)
-    , colored((filename == nullptr))
+            outf(filename)
+            , out(filename ? outf : std::cout)
+            , colored((filename == nullptr))
     {
     }
     ~Logger()
@@ -62,11 +60,23 @@ public:
         if (colored)
         {
             out << getColor(level)
-                << logging_message
-                << getColor(logLevel::INFO) <<'\n';
+                << "[" << std::put_time(timeInfo, "%T")
+                << "] " << "[" << FILE
+                << ":" << FUNC
+                << ":" << LINE
+                << "]" << " [" << LogLevelStr(level)
+                << "] "<< message
+
+                    << getColor(logLevel::INFO) <<'\n';
         }
         else
-            out << logging_message << '\n';
+            out << "[" << std::put_time(timeInfo, "%T")
+                << "] " << "[" << FILE
+                << ":" << FUNC
+                << ":" << LINE
+                << "]" << " [" << LogLevelStr(level)
+                << "] "<< message
+                << '\n';
         if(level == FATAL)
         {
             exit(EXIT_FAILURE);

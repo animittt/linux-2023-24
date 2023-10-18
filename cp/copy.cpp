@@ -191,7 +191,7 @@ int main(int argc, char** argv)
 {
     if(argc < 3)
     {
-        LOG_ERROR("wrong arguments ");
+        LOG_FATAL("wrong arguments ");
         exit(EXIT_FAILURE);
     }
     std::vector<std::string> arguments;
@@ -213,16 +213,16 @@ int main(int argc, char** argv)
     }
     if(arguments.size() < 2)
     {
-        LOG_ERROR("wrong arguments ");
-        exit(EXIT_FAILURE);
+        LOG_FATAL("wrong arguments");
     }
     destination = argv[argc - 1];
     arguments.pop_back();
     struct stat fileStat{};
     struct stat fileStat2{};
     int res = stat(destination, &fileStat);
-    stat(arguments[0].c_str(), &fileStat2);
-
+    int result = stat(arguments[0].c_str(), &fileStat2);
+    if(result != 0)
+        LOG_FATAL("can't access " + arguments[0] + ": " + strerror(errno));
     if(res != 0 && arguments.size() == 1 && S_ISREG(fileStat2.st_mode))
         open(destination, O_CREAT | O_WRONLY | O_TRUNC, 0755);
     else if(res != 0 && arguments.size() == 1 && S_ISDIR(fileStat2.st_mode))
@@ -231,14 +231,12 @@ int main(int argc, char** argv)
             mkdir(destination, 0755);
         else
         {
-            LOG_ERROR(std::string(destination) + " is not a directory");
-            exit(EXIT_FAILURE);
+            LOG_FATAL(std::string(destination) + " is not a directory");
         }
     }
     else if(res != 0 && arguments.size() > 1)
     {
-        LOG_ERROR(std::string(destination) + " is not a directory");
-        exit(EXIT_FAILURE);
+        LOG_FATAL(std::string(destination) + " is not a directory");
     }
     res = stat(destination, &fileStat);
     if(res != 0)
@@ -247,8 +245,7 @@ int main(int argc, char** argv)
     }
     if((arguments.size() > 1 || S_ISDIR(fileStat2.st_mode)) && S_ISREG(fileStat.st_mode))
     {
-        LOG_ERROR(std::string(destination) + " is not a directory");
-        exit(EXIT_FAILURE);
+        LOG_FATAL(std::string(destination) + " is not a directory");
     }
     if (S_ISDIR(fileStat.st_mode)) {
         if (force)

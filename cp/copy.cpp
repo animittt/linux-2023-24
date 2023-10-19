@@ -20,8 +20,7 @@ void copyFile(const char* source, const char* dest)
 {
     if(recursive)
     {
-        LOG_ERROR(std::string(source) + "is not a directory");
-        exit(EXIT_FAILURE);
+        LOG_FATAL(std::string(source) + "is not a directory");
     }
     int file_from_id = open(source, O_RDONLY);
     struct stat fileStat{};
@@ -49,14 +48,12 @@ void copyFile(const char* source, const char* dest)
         if(file_to_id == -1)
         {
             std::cout << dest << "\n";
-            LOG_ERROR("open ");
-            exit(EXIT_FAILURE);
+            LOG_FATAL("open ");
         }
     }
     if(file_from_id == -1)
     {
-        LOG_ERROR("open ");
-        exit(EXIT_FAILURE);
+        LOG_FATAL("open ");
     }
     std::vector<char> buffer(buffer_size, '\0');
     ssize_t bytes_read;
@@ -64,14 +61,12 @@ void copyFile(const char* source, const char* dest)
     {
         if (bytes_read < 0)
         {
-            LOG_ERROR("read failed ");
-            exit(EXIT_FAILURE);
+            LOG_FATAL("read failed ");
         }
         ssize_t bytes_written = write(file_to_id, buffer.data(), bytes_read);
         if (bytes_written < 0)
         {
-            LOG_ERROR("write failed: ");
-            exit(EXIT_FAILURE);
+            LOG_FATAL("write failed: ");
         }
     }
     close(file_to_id);
@@ -143,8 +138,7 @@ void copyDirectory(const char* source, const char* dest)
     destination = dest;
     if(!recursive)
     {
-        LOG_ERROR("-r not specified.");
-        exit(EXIT_FAILURE);
+        LOG_FATAL("-r not specified.");
     }
     ftw(source, ftw_callback, 1);
     destination = originalDestination;
@@ -192,7 +186,6 @@ int main(int argc, char** argv)
     if(argc < 3)
     {
         LOG_FATAL("wrong arguments ");
-        exit(EXIT_FAILURE);
     }
     std::vector<std::string> arguments;
     argument_parser parser(argc, argv, "rnf");
@@ -218,26 +211,23 @@ int main(int argc, char** argv)
     destination = argv[argc - 1];
     arguments.pop_back();
     struct stat fileStat{};
-    struct stat fileStat2{};
     int res = stat(destination, &fileStat);
-    int result = stat(arguments[0].c_str(), &fileStat2);
-    if(result != 0)
-        LOG_FATAL("can't access " + arguments[0] + ": " + strerror(errno));
-    if(res != 0 && arguments.size() == 1 && S_ISREG(fileStat2.st_mode))
-        open(destination, O_CREAT | O_WRONLY | O_TRUNC, 0755);
-    else if(res != 0 && arguments.size() == 1 && S_ISDIR(fileStat2.st_mode))
+    if(res != 0 && errno == ENOENT)
     {
-        if(std::string(destination).find_last_of('.') == std::string::npos)
+         if(arguments.size() == 1 && S_ISREG(fileStat2.st_mode))
+            open(destination, O_CREAT | O_WRONLY | O_TRUNC, 0755);
+        else if(arguments.size() == 1 && S_ISDIR(fileStat2.st_mode))
+        {
             mkdir(destination, 0755);
-        else
+         }
+        else if(res != 0 && arguments.size() > 1)
         {
             LOG_FATAL(std::string(destination) + " is not a directory");
         }
     }
-    else if(res != 0 && arguments.size() > 1)
-    {
-        LOG_FATAL(std::string(destination) + " is not a directory");
-    }
+    res = stat(arguments[0].c_str(), &fileStat);
+    if(result != 0)
+        LOG_FATAL("can't access " + arguments[0] + ": " + strerror(errno));
     res = stat(destination, &fileStat);
     if(res != 0)
     {

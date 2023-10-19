@@ -1,39 +1,59 @@
 #include <iostream>
 #include <arg_parser/argument_parser.h>
 #include <logging/logger.h>
-#include <fstream>
 #include <string>
 #include <vector>
+#include <random>
+#include <algorithm>
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/stat.h>
 #include<bits/stdc++.h>
 #include <dirent.h>
 #include <cstdlib>
-#include <ctime>
+
+constexpr size_t blockSize = 4096;
+
+std::vector<char> generateRandomVector()
+{
+    std::random_device rd;
+    std::mt19937 mt{rd()};
+    std::uniform_int_distribution<int> dist(0,255);
+    std::vector<char> vec(blockSize);
+    std::generate(vec.begin(), vec.end(), [&dist, &mt](){return dist(mt);});
+    return vec;
+}
+
+std::size_t getFileSize(int fd)
+{
+    struct stat fileStats{};
+    int res = fstat(fd, &fileStats);
+    if(res != 0)
+        LOG_ERROR("stat " + std::string(strerror(errno)));
+    return fileStats.st_size;
+}
 
 void secureDeleteFile(const std::string &filename, bool verbose)
 {
-    std::fstream file(filename, std::ios::out | std::ios::binary);
-    if (file.is_open())
+    int res = open(filename.c_str(), O_WRONLY);
+    if(res == -1)
+        LOG_FATAL("can't open file");
+    std::size_t fileSize = getFileSize(res);
+    std::vector<char> randVec = generateRandomVector();
+    std::size_t bytesWritten = 0;
+    while(bytesWritten < fileSize)
     {
-        srand(static_cast<unsigned int>(time(0)));
-        for (size_t i = 0; i < 10; ++i)
+        ssize_t writeRes =  write(res, randVec.data(), blockSize);
+        if(writeRes == -1)
         {
-            char randomData[1024];
-            for (int j = 0; j < 1024; ++j)
-                randomData[j] = rand() % 256;
-            file.write(randomData, sizeof(randomData));
+            LOG_ERROR(strerror(errno));
         }
-        file.close();
-        remove(filename.c_str());
-        if (verbose)
-            std::cout << "Securely deleted file: " << filename << std::endl;
+        else
+            bytesWritten += writeRes;
     }
-    else
-        LOG_ERROR("Error opening file: " + std::string(filename));
-
+    remove(filename.c_str());
 }
+
 bool removeDirectory(const char* path, bool verbose)
 {
     DIR* dir = opendir(path);
@@ -63,9 +83,10 @@ bool removeDirectory(const char* path, bool verbose)
         return false;
 
     if (verbose)
-        std::cout << "Securely deleted directory: " << path << std::endl;
+        LOG_INFO("Securely deleted directory: " + std::string(path));
     return true;
 }
+
 int main(int argc, char *argv[])
 {
     if (argc < 2)
@@ -73,8 +94,8 @@ int main(int argc, char *argv[])
         LOG_ERROR("missing operand");
         return 1;
     }
-    bool recursive;
-    bool verbose;
+    bool recursive = false;
+    bool verbose = false;
     std::vector<std::string> arguments;
     argument_parser parser(argc, argv, "rv");
     for (auto it = parser.begin(); it != parser.end(); ++it)
@@ -99,8 +120,8 @@ int main(int argc, char *argv[])
         res = stat(filename.c_str(), &fileStat);
         if(res != 0)
         {
-            LOG_ERROR("cannot remove " + filename + ": " + strerror(errno));
-            return 1;
+            LOG_WARNING("cannot remove " + filename + ": " + strerror(errno));
+            continue;
         }
         if(S_ISREG(fileStat.st_mode))
         {

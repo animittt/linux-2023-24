@@ -3,8 +3,6 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <ftw.h>
-#include <vector>
-#include <ftw.h>
 #include <sys/stat.h>
 #include<bits/stdc++.h>
 #include <dirent.h>
@@ -12,16 +10,12 @@
 #include <logging/logger.h>
 
 const std::size_t buffer_size = 4096;
-const char* destination;
 bool recursive = false;
+const char* destination;
 bool force = false;
 
 void copyFile(const char* source, const char* dest)
 {
-    if(recursive)
-    {
-        LOG_FATAL(std::string(source) + "is not a directory");
-    }
     int file_from_id = open(source, O_RDONLY);
     struct stat fileStat{};
     stat(dest, &fileStat);
@@ -85,7 +79,6 @@ int ftw_callback(const char* source, const struct stat* sb, int typeflag)
     }
     if(typeflag == FTW_F)
     {
-        recursive = false;
         std::string dest_str = std::string(source);
         std::string destName;
         if(dest_str.find_last_of('/') != std::string::npos)
@@ -117,7 +110,7 @@ int ftw_callback(const char* source, const struct stat* sb, int typeflag)
         madeDir = true;
         recursive = true;
         std::string dest_str = std::string(source);
-        std::string destName;
+        std::string destName;s
         if(dest_str.find_last_of('/') != std::string::npos)
         {
             destName = dest_str.substr(dest_str.find_last_of('/'),dest_str.length());
@@ -134,14 +127,26 @@ int ftw_callback(const char* source, const struct stat* sb, int typeflag)
 
 void copyDirectory(const char* source, const char* dest)
 {
-    const char* originalDestination = destination;  // Save the original destination
-    destination = dest;
     if(!recursive)
     {
-        LOG_FATAL("-r not specified.");
+        LOG_WARNING(std::string(source) + " is a directory: Omitting.");
+        return;
+    }
+    if(mkdir(dest, 0755 ) < 0)
+    {
+        if( errno == EEXIST)
+        {
+            struct stat destinationStat{};
+            stat(dest, &destinationStat);
+            if(!S_ISDIR(destinationStat.st_mode))
+            {
+                LOG_WARNING(std::string(dest) + " ");
+            }
+        }
+        else
+            LOG_ERROR(std::string(dest) + strerror(errno));
     }
     ftw(source, ftw_callback, 1);
-    destination = originalDestination;
 }
 
 bool removeDirectory(const char* path)
@@ -183,6 +188,7 @@ bool removeDirectory(const char* path)
 
 int main(int argc, char** argv)
 {
+    system("pwd");
     if(argc < 3)
     {
         LOG_FATAL("wrong arguments ");
@@ -210,48 +216,44 @@ int main(int argc, char** argv)
     }
     destination = argv[argc - 1];
     arguments.pop_back();
-    struct stat fileStat{};
-    int res = stat(destination, &fileStat);
-    if(res != 0 && errno == ENOENT)
-    {
-         if(arguments.size() == 1 && S_ISREG(fileStat2.st_mode))
-            open(destination, O_CREAT | O_WRONLY | O_TRUNC, 0755);
-        else if(arguments.size() == 1 && S_ISDIR(fileStat2.st_mode))
-        {
-            mkdir(destination, 0755);
-         }
-        else if(res != 0 && arguments.size() > 1)
-        {
-            LOG_FATAL(std::string(destination) + " is not a directory");
-        }
-    }
-    res = stat(arguments[0].c_str(), &fileStat);
-    if(result != 0)
-        LOG_FATAL("can't access " + arguments[0] + ": " + strerror(errno));
-    res = stat(destination, &fileStat);
+    struct stat destStat{};
+    int res = stat(destination, &destStat);
+
     if(res != 0)
     {
-        LOG_FATAL("couldn't open" + std::string(destination));
-    }
-    if((arguments.size() > 1 || S_ISDIR(fileStat2.st_mode)) && S_ISREG(fileStat.st_mode))
-    {
-        LOG_FATAL(std::string(destination) + " is not a directory");
-    }
-    if (S_ISDIR(fileStat.st_mode)) {
-        if (force)
+        if(errno == ENOENT)
         {
-            removeDirectory(destination);
-            mkdir(destination, 0755);
+            if (S_ISREG(destStat.st_mode))
+            {
+                if(arguments.size() == 1)
+                    open(destination, O_CREAT | O_WRONLY | O_TRUNC, 0755); //TODO check return value
+                else
+                    LOG_FATAL("target " + std::string(destination) + " is not a directory");
+            }
+            else if(S_ISDIR(destStat.st_mode))
+            {
+                if (force)
+                {
+                    removeDirectory(destination);
+                    mkdir(destination, 0755);
+                }
+            }
+            else if (arguments.size() > 1)
+            {
+                LOG_FATAL(std::string(destination) +" is not a directory");
+            }
         }
+        else
+            LOG_FATAL(strerror(errno));
     }
     for(const auto & argument : arguments)
     {
-        stat(argument.c_str(), &fileStat);
-        if(S_ISREG(fileStat.st_mode))
+        stat(argument.c_str(), &destStat);
+        if(S_ISREG(destStat.st_mode))
         {
             copyFile(argument.c_str(), destination);
         }
-        else if(S_ISDIR(fileStat.st_mode))
+        else if(S_ISDIR(destStat.st_mode))
         {
             copyDirectory(argument.c_str(), destination);
         }

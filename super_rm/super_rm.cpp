@@ -4,23 +4,21 @@
 #include <string>
 #include <vector>
 #include <random>
-#include <algorithm>
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/stat.h>
 #include<bits/stdc++.h>
 #include <dirent.h>
-#include <cstdlib>
 
 constexpr size_t blockSize = 4096;
 
 std::vector<char> generateRandomVector()
 {
-    std::random_device rd;
-    std::mt19937 mt{rd()};
-    std::uniform_int_distribution<int> dist(0,255);
+    static thread_local std::random_device rd;
+    static thread_local std::mt19937 mt{rd()};
+    static thread_local std::uniform_int_distribution<int> dist(0,255);
     std::vector<char> vec(blockSize);
-    std::generate(vec.begin(), vec.end(), [&dist, &mt](){return dist(mt);});
+    std::generate(vec.begin(), vec.end(), [](){return dist(mt);});
     return vec;
 }
 
@@ -29,7 +27,10 @@ std::size_t getFileSize(int fd)
     struct stat fileStats{};
     int res = fstat(fd, &fileStats);
     if(res != 0)
-        LOG_ERROR("stat " + std::string(strerror(errno)));
+    {
+        LOG_ERROR(std::string(strerror(errno)));
+        throw std::runtime_error("can't get file size.");
+    }
     return fileStats.st_size;
 }
 
@@ -52,6 +53,8 @@ void secureDeleteFile(const std::string &filename, bool verbose)
             bytesWritten += writeRes;
     }
     remove(filename.c_str());
+    if(verbose)
+        LOG_INFO("Securely deleted file: " + filename );
 }
 
 bool removeDirectory(const char* path, bool verbose)
@@ -60,7 +63,7 @@ bool removeDirectory(const char* path, bool verbose)
     if (!dir)
     {
         LOG_ERROR("cannot remove " + std::string(path) + ": " + strerror(errno));
-    };
+    }
     struct dirent* entry;
     while ((entry = readdir(dir)) != nullptr)
     {
@@ -114,7 +117,7 @@ int main(int argc, char *argv[])
         }
     }
     struct stat fileStat{};
-    int res{};
+    int res;
     for(const auto& filename : arguments)
     {
         res = stat(filename.c_str(), &fileStat);

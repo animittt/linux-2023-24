@@ -7,10 +7,10 @@
 #include <string>
 #include <iomanip>
 
-#define LOG_INFO(message) getLogging().Log(INFO, message, __FILE__, __func__, __LINE__)
-#define LOG_WARNING(message) getLogging().Log(WARNING, message, __FILE__, __func__, __LINE__)
-#define LOG_ERROR(message) getLogging().Log(ERROR, message, __FILE__, __func__, __LINE__)
-#define LOG_FATAL(message) getLogging().Log(FATAL, message, __FILE__, __func__, __LINE__)
+#define LOG_INFO(message) getLogging().Log(INFO, message, __func__, __LINE__)
+#define LOG_WARNING(message) getLogging().Log(WARNING, message,  __func__, __LINE__)
+#define LOG_ERROR(message) getLogging().Log(ERROR, message, __func__, __LINE__)
+#define LOG_FATAL(message) getLogging().Log(FATAL, message, __func__, __LINE__)
 enum  logLevel
 {
     INFO, WARNING, ERROR, FATAL, DEBUG
@@ -53,7 +53,7 @@ public:
                 return "UNKNOWN";
         }
     }
-    void Log(logLevel level,const std::string& message, const std::string& FILE, const std::string& FUNC, int LINE )
+    void Log(logLevel level,const std::string& message, const std::string& FUNC, int LINE )
     {
         std::time_t currentTime = std::time(nullptr);
         std::tm* timeInfo = std::localtime(&currentTime);
@@ -61,8 +61,7 @@ public:
         {
             out << getColor(level)
                 << "[" << std::put_time(timeInfo, "%T")
-                << "] " << "[" << FILE
-                << ":" << FUNC
+                << "] " << " [" << FUNC
                 << ":" << LINE
                 << "]" << " [" << LogLevelStr(level)
                 << "] "<< message
@@ -71,8 +70,7 @@ public:
         }
         else
             out << "[" << std::put_time(timeInfo, "%T")
-                << "] " << "[" << FILE
-                << ":" << FUNC
+                << "] " << "["  << FUNC
                 << ":" << LINE
                 << "]" << " [" << LogLevelStr(level)
                 << "] "<< message

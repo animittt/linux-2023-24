@@ -2,18 +2,14 @@
 #include <climits>
 #include <iostream>
 #include <cstring>
-#include <fcntl.h>
 #include <unistd.h>
 #include <logging/logger.h>
-#include <sys/stat.h>
-#include <ftw.h>
 
-    static void /* Display information from inotify_event structure */
-displayInotifyEvent(struct inotify_event *i)
+  static void displayInotifyEvent(struct inotify_event *i)
 {
-    printf(" wd =%2d; ", i->wd);
+    std::cout << " wd = " <<  i->wd << '\n';
     if (i->cookie > 0)
-        printf("cookie =%4d; ", i->cookie);
+        std::cout << "cookie = " << i->cookie << '\n';
     printf("mask = ");
     if (i->mask & IN_ACCESS) LOG_WARNING("IN_ACCESS ");
     if (i->mask & IN_ATTRIB) LOG_WARNING("IN_ATTRIB ");
@@ -31,9 +27,8 @@ displayInotifyEvent(struct inotify_event *i)
     if (i->mask & IN_OPEN) LOG_WARNING("IN_OPEN ");
     if (i->mask & IN_Q_OVERFLOW) LOG_WARNING("IN_Q_OVERFLOW ");
     if (i->mask & IN_UNMOUNT) LOG_WARNING("IN_UNMOUNT ");
-    printf("\n");
     if (i->len > 0)
-        printf(" name = %s\n", i->name);
+        std::cout << "name = " << i->name << '\n';
 }
 #define BUF_LEN (10 * (sizeof(struct inotify_event) + NAME_MAX + 1))
 int main(int argc, char *argv[])
@@ -45,20 +40,19 @@ int main(int argc, char *argv[])
     char *p;
     struct inotify_event *event;
     if (argc < 2 || strcmp(argv[1], "--help") == 0)
-        LOG_INFO("%s pathname... \n" +  std::string(argv[0]));
+    {
+        LOG_INFO("pathname... \n" +  std::string(argv[0]));
+        return 0;
+    }
     inotifyFd = inotify_init();
     if (inotifyFd == -1)
-        LOG_FATAL("inotify_init" + std::string(strerror(errno)));
-
-    //struct stat fileStat{};
-
-    for (j = 1; j < argc; j++)
+        LOG_FATAL("inotify_init " + std::string(strerror(errno)));
+    for (j = 1; j < argc; ++j)
     {
-        //stat(argv[j], &fileStat);
         wd = inotify_add_watch(inotifyFd, argv[j], IN_ALL_EVENTS);
         if (wd == -1)
-            LOG_FATAL("inotify_add_watch" + std::string(strerror(errno)));
-        printf("Watching %s using wd %d\n", argv[j], wd);
+            LOG_FATAL("inotify_add_watch " + std::string(strerror(errno)));
+        std::cout << "Watching" <<  argv[j] << " using " << wd << '\n';
     }
     for (;;)
     {
@@ -70,7 +64,7 @@ int main(int argc, char *argv[])
         printf("Read %ld bytes from inotify fd\n", (long) numRead);
         for (p = buf; p < buf + numRead; )
         {
-            event = (struct inotify_event *) p;
+            event = (struct inotify_event*) p;
 
             displayInotifyEvent(event);
             p += sizeof(struct inotify_event) + event->len;

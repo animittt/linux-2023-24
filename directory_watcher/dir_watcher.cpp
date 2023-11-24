@@ -7,10 +7,9 @@
 
   static void displayInotifyEvent(struct inotify_event *i)
 {
-    std::cout << " wd = " <<  i->wd << '\n';
+    LOG_INFO("wd = " + std::to_string(i->wd));
     if (i->cookie > 0)
-        std::cout << "cookie = " << i->cookie << '\n';
-    printf("mask = ");
+        LOG_INFO ("cookie = " + std::to_string(i->cookie) + '\n');
     if (i->mask & IN_ACCESS) LOG_WARNING("IN_ACCESS ");
     if (i->mask & IN_ATTRIB) LOG_WARNING("IN_ATTRIB ");
     if (i->mask & IN_CLOSE_NOWRITE) LOG_WARNING("IN_CLOSE_NOWRITE ");
@@ -28,7 +27,7 @@
     if (i->mask & IN_Q_OVERFLOW) LOG_WARNING("IN_Q_OVERFLOW ");
     if (i->mask & IN_UNMOUNT) LOG_WARNING("IN_UNMOUNT ");
     if (i->len > 0)
-        std::cout << "name = " << i->name << '\n';
+        LOG_INFO("name = " + std::string(i->name) +'\n');
 }
 #define BUF_LEN (10 * (sizeof(struct inotify_event) + NAME_MAX + 1))
 int main(int argc, char *argv[])

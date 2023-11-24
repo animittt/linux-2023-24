@@ -61,16 +61,17 @@ public:
         {
             out << getColor(level)
                 << "[" << std::put_time(timeInfo, "%T")
-                << "] " << " [" << FUNC
-                << ":" << LINE
-                << "]" << " [" << LogLevelStr(level)
+                << "] " << "["
+                << FUNC << ":"
+                << LINE << "]"
+                << " [" << LogLevelStr(level)
                 << "] "<< message
 
-                    << getColor(logLevel::INFO) <<'\n';
+                << getColor(logLevel::INFO) <<'\n';
         }
         else
             out << "[" << std::put_time(timeInfo, "%T")
-                << "] " << "["  << FUNC
+                << "] " << "[" << FUNC
                 << ":" << LINE
                 << "]" << " [" << LogLevelStr(level)
                 << "] "<< message

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 project(zdarova_otec)
 
-set(SOURCES super_rm.cpp super_rm.h)
+set(SOURCES main.cpp super_rm.cpp super_rm.h)
 set(CMAKE_CXX_STANDARD 20)
 
 add_executable(super_rm ${SOURCES})

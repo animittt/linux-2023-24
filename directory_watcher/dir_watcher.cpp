@@ -3,7 +3,7 @@
 #include <iostream>
 #include <cstring>
 #include <unistd.h>
-#include <logging/logger.h>
+#include <logger.h>
 
   static void displayInotifyEvent(struct inotify_event *i)
 {

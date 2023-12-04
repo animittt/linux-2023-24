@@ -1,16 +1,16 @@
 #include <iostream>
-#include <arg_parser/argument_parser.h>
-#include <logging/logger.h>
-#include <string>
-#include <vector>
+#include <argument_parser.h>
+#include <logger.h>
 #include <random>
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/stat.h>
-#include<bits/stdc++.h>
+#include <bits/stdc++.h>
 #include <dirent.h>
+#include "super_rm.h"
 
-constexpr size_t blockSize = 4096;
+namespace 
+{
 
 std::vector<char> generateRandomVector()
 {
@@ -89,6 +89,8 @@ bool removeDirectory(const char* path, bool verbose)
         LOG_INFO("Securely deleted directory: " + std::string(path));
     return true;
 }
+
+} // Unnamed namespace.
 
 int main(int argc, char *argv[])
 {

@@ -5,9 +5,8 @@
 //if _key is not empty and the _value is empty then it is a flag
 //if both _key and _value are non-empty then it is an option
 
-class argument
+struct argument
 {
-public:
     std::string _key;
     std::optional<std::string> _value;
 };

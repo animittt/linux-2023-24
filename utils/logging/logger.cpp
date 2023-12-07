@@ -60,6 +60,8 @@ void Logger::Log(logLevel level,const std::string& message, const std::string& F
     {
         exit(EXIT_FAILURE);
     }
+    out<<'\n';
+    out.flush();
 
 }
 

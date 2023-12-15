@@ -9,8 +9,7 @@ Logger::Logger(const char* filename)
 
 Logger::~Logger()
 {
-    out << std::flush;
-    outf.close();
+    out << std::endl;
 }
 
 std::string Logger::LogLevelStr(logLevel level)

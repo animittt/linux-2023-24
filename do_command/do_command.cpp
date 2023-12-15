@@ -42,7 +42,7 @@ int main()
     program1[1] = "-a";
     program1[2] = "-l";
     program1[3] = nullptr;
-
+    
     const char* program2[3];
     program2[0] = "cat";
     program2[1] = "/etc/lsb-release";
@@ -50,9 +50,7 @@ int main()
 
     int exit_code1 = do_command(program1);
     int exit_code2 = do_command(program2);
-
     std::cout << "Exit code 1: " << exit_code1 << '\n';
     std::cout << "Exit code 2: " << exit_code2 << '\n';
-
     return 0;
 }

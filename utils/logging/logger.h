@@ -8,10 +8,12 @@
 #include <string>
 #include <iomanip>
 
-#define LOG_INFO(filename,message) getLogging(filename).Log(INFO, message, __func__, __LINE__)
-#define LOG_WARNING(filename,message) getLogging(filename).Log(WARNING, message,  __func__, __LINE__)
-#define LOG_ERROR(filename,message) getLogging(filename).Log(ERROR, message, __func__, __LINE__)
-#define LOG_FATAL(filename,message) getLogging(filename).Log(FATAL, message, __func__, __LINE__)
+extern const char* path;
+
+#define LOG_INFO(message) getLogging().Log(INFO, message, __func__, __LINE__)
+#define LOG_WARNING(message) getLogging().Log(WARNING, message,  __func__, __LINE__)
+#define LOG_ERROR(message) getLogging().Log(ERROR, message, __func__, __LINE__)
+#define LOG_FATAL(message) getLogging().Log(FATAL, message, __func__, __LINE__)
 
 enum  logLevel
 {
@@ -33,8 +35,13 @@ public:
     static char const* getColor(logLevel level);
 };
 
-inline Logger& getLogging(const char* filename = nullptr)
+void setLogger(const char* filename)
 {
-    static Logger log(filename);
+    path = filename;
+}
+
+inline Logger& getLogging()
+{
+    static Logger log(path);
     return log;
 }

@@ -1,5 +1,7 @@
 #include <logger.h>
 
+const char* path;
+
 Logger::Logger(const char* filename) 
     : outf(filename)
     , out(filename ? outf : std::cout)

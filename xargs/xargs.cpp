@@ -3,6 +3,7 @@
 #include <logger.h>
 #include <unistd.h>
 #include <cstring>
+
 void executeCommand(const std::string& command, const std::vector<std::string>& arguments)
 {
     std::vector<const char*> args;

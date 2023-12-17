@@ -4,16 +4,18 @@
 #include <cstring>
 #include <unistd.h>
 #include <logger.h>
-
+#include <sys/types.h>
+#include <fcntl.h>
+#include <unistd.h>
   static void displayInotifyEvent(struct inotify_event *i)
 {
     LOG_INFO("wd = " + std::to_string(i->wd));
     if (i->cookie > 0)
         LOG_INFO ("cookie = " + std::to_string(i->cookie) + '\n');
-    if (i->mask & IN_ACCESS) LOG_WARNING("IN_ACCESS ");
-    if (i->mask & IN_ATTRIB) LOG_WARNING("IN_ATTRIB ");
-    if (i->mask & IN_CLOSE_NOWRITE) LOG_WARNING("IN_CLOSE_NOWRITE ");
-    if (i->mask & IN_CLOSE_WRITE) LOG_WARNING("IN_CLOSE_WRITE ");
+    if (i->mask & IN_ACCESS) LOG_WARNING( "IN_ACCESS ");
+    if (i->mask & IN_ATTRIB) LOG_WARNING( "IN_ATTRIB ");
+    if (i->mask & IN_CLOSE_NOWRITE) LOG_WARNING( "IN_CLOSE_NOWRITE ");
+    if (i->mask & IN_CLOSE_WRITE) LOG_WARNING( "IN_CLOSE_WRITE ");
     if (i->mask & IN_CREATE) LOG_WARNING("IN_CREATE ");
     if (i->mask & IN_DELETE) LOG_WARNING("IN_DELETE ");
     if (i->mask & IN_DELETE_SELF) LOG_WARNING("IN_DELETE_SELF ");
@@ -29,9 +31,34 @@
     if (i->len > 0)
         LOG_INFO("name = " + std::string(i->name) +'\n');
 }
+void daemonize()
+{
+    pid_t daemon = fork();
+    if(daemon != 0)
+        exit(0);
+    if(setsid() == -1)
+    {
+        LOG_ERROR("setsid" + std::string(strerror(errno)));
+        exit(1);
+    }
+    if(chdir("/"))
+    {
+        LOG_ERROR("chdir" + std::string(strerror(errno)));
+        exit(1);
+    }
+    for(int i = 0; i < 1023; ++i)
+        close(i);
+    open("/dev/null", O_RDWR);
+    dup(0);
+    dup(0);
+
+}
 #define BUF_LEN (10 * (sizeof(struct inotify_event) + NAME_MAX + 1))
 int main(int argc, char *argv[])
 {
+    path = "/home/mitani/linux-2024-25/directory_watcher/logfile.log";
+    setLogger(path);
+    daemonize();
     int inotifyFd;
     int wd, j;
     char buf[BUF_LEN];
@@ -51,7 +78,6 @@ int main(int argc, char *argv[])
         wd = inotify_add_watch(inotifyFd, argv[j], IN_ALL_EVENTS);
         if (wd == -1)
             LOG_FATAL("inotify_add_watch " + std::string(strerror(errno)));
-        std::cout << "Watching" <<  argv[j] << " using " << wd << '\n';
     }
     for (;;)
     {
@@ -60,7 +86,6 @@ int main(int argc, char *argv[])
             LOG_FATAL("read() from inotify fd returned 0!");
         if (numRead == -1)
             LOG_FATAL("read" + std::string(strerror(errno)));
-        printf("Read %ld bytes from inotify fd\n", (long) numRead);
         for (p = buf; p < buf + numRead; )
         {
             event = (struct inotify_event*) p;

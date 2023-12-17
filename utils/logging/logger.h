@@ -8,6 +8,8 @@
 #include <string>
 #include <iomanip>
 
+extern const char* path;
+
 #define LOG_INFO(message) getLogging().Log(INFO, message, __func__, __LINE__)
 #define LOG_WARNING(message) getLogging().Log(WARNING, message,  __func__, __LINE__)
 #define LOG_ERROR(message) getLogging().Log(ERROR, message, __func__, __LINE__)
@@ -33,8 +35,13 @@ public:
     static char const* getColor(logLevel level);
 };
 
+void setLogger(const char* filename)
+{
+    path = filename;
+}
+
 inline Logger& getLogging()
 {
-    static Logger log(nullptr);
+    static Logger log(path);
     return log;
 }

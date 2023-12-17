@@ -1,5 +1,7 @@
 #include <logger.h>
 
+const char* path;
+
 Logger::Logger(const char* filename) 
     : outf(filename)
     , out(filename ? outf : std::cout)
@@ -9,8 +11,7 @@ Logger::Logger(const char* filename)
 
 Logger::~Logger()
 {
-    out << std::flush;
-    outf.close();
+    out << std::endl;
 }
 
 std::string Logger::LogLevelStr(logLevel level)
@@ -60,6 +61,8 @@ void Logger::Log(logLevel level,const std::string& message, const std::string& F
     {
         exit(EXIT_FAILURE);
     }
+    out<<'\n';
+    out.flush();
 
 }
 

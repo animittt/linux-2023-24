@@ -47,7 +47,7 @@ public:
         condition_.wait(lock, [this] { return !queue_.empty() || stop_; });
 
         if (queue_.empty() && stop_)
-            return false;
+            return T{};
         T& item = queue_.front();
         queue_.pop();
         condition_.notify_one();

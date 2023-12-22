@@ -24,10 +24,8 @@ void producer()
         {
             std::unique_lock lock(requestsMutex);
             requestsState.wait(lock, [&]() { return requestsQueue.size() != requestsLimit; });
-
             if (engineStop)
                 break;
-
             requestsQueue.Enqueue(tmp);
             std::cout << "producer: " << tmp << "\n";
         }
@@ -35,8 +33,10 @@ void producer()
     }
 }
 
-void consumer() {
-    while (true) {
+void consumer()
+{
+    while (true)
+    {
         double retrievedValue = 0.;
         {
             std::unique_lock lock(requestsMutex);

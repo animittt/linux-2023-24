@@ -16,19 +16,16 @@ class BlockingQueue
 {
 public:
     explicit BlockingQueue(std::size_t capacity)
-            : capacity_(capacity), stop_(false) {}
+            : capacity_(capacity)
+            , stop_(false) {}
 
     void Enqueue(const T& item)
     {
         {
             std::unique_lock lock(mutex_);
             condition_.wait(lock, [this] { return queue_.size() < capacity_ || stop_; });
-
             if (stop_)
-            {
                 return;
-            }
-
             queue_.push(item);
         }
         condition_.notify_one();
@@ -49,13 +46,10 @@ public:
         std::unique_lock lock(mutex_);
         condition_.wait(lock, [this] { return !queue_.empty() || stop_; });
 
-        if (queue_.empty() && stop_) {
+        if (queue_.empty() && stop_)
             return false;
-        }
-
         T& item = queue_.front();
         queue_.pop();
-
         condition_.notify_one();
         return item;
     }

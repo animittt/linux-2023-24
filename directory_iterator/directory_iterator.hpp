@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <stack>
+#include <utility>
 #include <dirent.h>
 #include <sys/stat.h>
 
@@ -66,5 +67,25 @@ private:
         }
         currentEntry.clear();
     }
+};
+
+class Directory
+{
+public:
+    explicit Directory(std::string  path)
+    : path(std::move(path)) {}
+
+    [[nodiscard]] RecursiveDirectoryIterator begin() const
+    {
+        return RecursiveDirectoryIterator(path);
+    }
+
+    [[nodiscard]] RecursiveDirectoryIterator end() const
+    {
+        return RecursiveDirectoryIterator("");
+    }
+
+private:
+    std::string path;
 };
 

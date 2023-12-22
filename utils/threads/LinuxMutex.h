@@ -2,7 +2,7 @@
 #define THREADAPI_LINUXMUTEX_H
 #include <stdexcept>
 #include <cstring>
-
+#include <logger.h>
 namespace rau
 {
 
@@ -19,7 +19,7 @@ namespace rau
         {
             if (pthread_mutex_init(&mutex, nullptr) != 0)
             {
-                throw std::runtime_error("Failed to initialize mutex " + std::string(strerror(errno)));
+                LOG_ERROR("Failed to initialize mutex " + std::string(strerror(errno)));
             }
         }
 
@@ -27,7 +27,7 @@ namespace rau
         {
             if (pthread_mutex_destroy(&mutex) != 0)
             {
-                throw std::runtime_error("Failed to destroy the mutex " + std::string(strerror(errno)));
+                LOG_ERROR("Failed to destroy the mutex " + std::string(strerror(errno)));
             }
         }
 
@@ -40,19 +40,19 @@ namespace rau
         {
             if (pthread_mutex_lock(&mutex) != 0)
             {
-                throw std::runtime_error("Failed to lock the mutex " + std::string(strerror(errno)));
+                throw std::system_error(std::make_error_code(std::errc::resource_deadlock_would_occur));
             }
         }
 
-        void unlock()
+        void unlock() noexcept
         {
             if (pthread_mutex_unlock(&mutex) != 0)
             {
-                throw std::runtime_error("Failed to unlock the mutex " + std::string(strerror(errno)));
+                LOG_ERROR("Failed to unlock the mutex " + std::string(strerror(errno)));
             }
         }
 
-        bool try_lock()
+        bool try_lock() noexcept
         {
             return pthread_mutex_trylock(&mutex) == 0;
         }

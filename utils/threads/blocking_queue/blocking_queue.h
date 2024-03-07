@@ -1,6 +1,3 @@
-//
-// Created by mitani on 12/22/23.
-//
 #pragma once
 
 #include <iostream>
@@ -15,17 +12,13 @@ template <typename T>
 class BlockingQueue
 {
 public:
-    explicit BlockingQueue(std::size_t capacity)
-            : capacity_(capacity)
-            , stop_(false) {}
+    BlockingQueue()
+            : stop_(false) {}
 
     void Enqueue(const T& item)
     {
         {
             std::unique_lock lock(mutex_);
-            condition_.wait(lock, [this] { return queue_.size() < capacity_ || stop_; });
-            if (stop_)
-                return;
             queue_.push(item);
         }
         condition_.notify_one();
@@ -49,10 +42,10 @@ public:
         condition_.wait(lock, [this] { return !queue_.empty() || stop_; });
 
         if (queue_.empty() && stop_)
-            return false;
-        T& item = queue_.front();
+            return T{};
+
+        T item = std::move(queue_.front());
         queue_.pop();
-        condition_.notify_one();
         return item;
     }
 
@@ -66,10 +59,8 @@ public:
     }
 
 private:
-    std::size_t capacity_;
     std::queue<T> queue_;
     std::mutex mutex_;
     std::condition_variable condition_;
     bool stop_;
 };
-

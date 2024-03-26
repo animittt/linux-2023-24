@@ -13,8 +13,7 @@ class ThreadPool
 {
 public:
     explicit ThreadPool(std::mutex& mutex, std::condition_variable& condition, std::size_t num_threads = std::thread::hardware_concurrency())
-            : m_stop(false)
-            , m_condition(condition)
+            : m_condition(condition)
             , m_mutex(mutex)
     {
         for (std::size_t i = 0; i < num_threads; ++i)
@@ -26,8 +25,8 @@ public:
                                            std::function<void()> task;
                                            {
                                                std::unique_lock<std::mutex> lock(m_mutex);
-                                               m_condition.wait(lock, [this] { return !m_tasks.empty() || m_stop; });
-                                               if (m_stop && m_tasks.empty())
+                                               m_condition.wait(lock, [this] { return !m_tasks.empty() || m_stop.test(); });
+                                               if (m_stop.test() && m_tasks.empty())
                                                    return;
                                                task = std::move(m_tasks.Dequeue());
                                            }
@@ -53,7 +52,7 @@ public:
     {
         {
             std::lock_guard<std::mutex> lock(m_mutex);
-            m_stop = true;
+            m_stop.test_and_set();
         }
         m_condition.notify_all();
         for (std::thread& worker : m_workers)
@@ -71,5 +70,5 @@ private:
     std::mutex& m_mutex;
     std::condition_variable& m_condition;
     BlockingQueue<std::function<void()>> m_tasks;
-    bool m_stop;
+    std::atomic_flag m_stop;
 };

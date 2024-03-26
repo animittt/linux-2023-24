@@ -1,3 +1,4 @@
+
 #include <iostream>
 #include <thread>
 #include <queue>
@@ -6,56 +7,69 @@
 #include <functional>
 #include <future>
 #include <optional>
-#include "blocking_queue.h"
+#include "blockingQueue.h"
 
 class ThreadPool
 {
 public:
-    explicit ThreadPool(std::size_t num_threads = std::thread::hardware_concurrency()) : stop(false)
+    explicit ThreadPool(std::mutex& mutex, std::condition_variable& condition, std::size_t num_threads = std::thread::hardware_concurrency())
+            : m_stop(false)
+            , m_condition(condition)
+            , m_mutex(mutex)
     {
         for (std::size_t i = 0; i < num_threads; ++i)
         {
-            workers.emplace_back([this]
-            {
-                while (true)
-                {
-                    std::optional<std::function<void()>> maybe_task = tasks.Dequeue();
-                    if (!maybe_task.has_value() || !*maybe_task)
-                        break;
-                    std::function<void()> task = std::move(maybe_task.value());
-                    task();
-                }
-            });
+            m_workers.emplace_back([this]
+                                   {
+                                       while (true)
+                                       {
+                                           std::function<void()> task;
+                                           {
+                                               std::unique_lock<std::mutex> lock(m_mutex);
+                                               m_condition.wait(lock, [this] { return !m_tasks.empty() || m_stop; });
+                                               if (m_stop && m_tasks.empty())
+                                                   return;
+                                               task = std::move(m_tasks.Dequeue());
+                                           }
+                                           task();
+                                       }
+                                   });
         }
     }
 
     template<class F, class... Args>
-    auto push(F&& f, Args&&... args) -> std::future<decltype(f(args...))> 
+    auto push(F&& f, Args&&... args) -> std::future<std::invoke_result_t<F, Args...>>
     {
-        using return_type = decltype(f(args...));
-        auto task = std::make_shared<std::packaged_task<return_type()>>(
-                std::bind(std::forward<F>(f), std::forward<Args>(args)...)
-        );
+        using return_type = std::invoke_result_t<F, Args...>;
+        auto task = std::make_shared<std::packaged_task<return_type()>>([f = std::forward<F>(f), tup = std::make_tuple(std::forward<Args>(args)...)]() mutable {
+            return std::apply(f, tup);
+        });
         std::future<return_type> res = task->get_future();
-        tasks.Enqueue([task](){ (*task)(); });
+        m_tasks.Enqueue([task](){ (*task)(); });
         return res;
     }
 
     ~ThreadPool()
     {
         {
-            std::lock_guard<std::mutex> lock(mutex_);
-            stop = true;
+            std::lock_guard<std::mutex> lock(m_mutex);
+            m_stop = true;
         }
-        for (std::thread& worker : workers)
-            tasks.Stop();
-        for (std::thread& worker : workers)
+        m_condition.notify_all();
+        for (std::thread& worker : m_workers)
             worker.join();
     }
 
+    bool empty()
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        return m_tasks.empty();
+    }
+
 private:
-    BlockingQueue<std::function<void()>> tasks;
-    std::vector<std::thread> workers;
-    std::mutex mutex_;
-    bool stop;
+    std::vector<std::thread> m_workers;
+    std::mutex& m_mutex;
+    std::condition_variable& m_condition;
+    BlockingQueue<std::function<void()>> m_tasks;
+    bool m_stop;
 };

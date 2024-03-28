@@ -27,7 +27,7 @@ void handle_response(int signal)
 
 void send_signal_to_spy(int pid)
 {
-    std::cout << "Sending SIGUSR1 to a process with PID: " << pid << std::endl;
+    std::cout << "Sending SIGCONT to a process with PID: " << pid << std::endl;
     kill(pid, SIGCONT);
 }
 
@@ -61,7 +61,8 @@ int main()
 
     for (pid_t pid : pids)
     {
-        if (kill(pid, 0) == 0)
+        std::string procPath = "/proc/" + std::to_string(pid);
+        if (access(procPath.c_str(), F_OK) == 0)
         {
             std::cout << "Checking process with PID: " << pid << std::endl;
             send_signal_to_spy(pid);

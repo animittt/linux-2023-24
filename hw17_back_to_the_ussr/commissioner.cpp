@@ -7,21 +7,15 @@
 #include <unistd.h>
 #include <sys/wait.h>
 
-bool responded = false;
-
-void handle_spy(pid_t pid)
-{
-    std::cout << "Spionen of bourjois, western, anticommunist, visual studio/windows using scum detected with PID: " << pid << std::endl;
-    std::cout << "Sending SIGKILL to terminate the spy process.\n";
-    kill(pid, SIGKILL);
-}
-
-void handle_response(int signal)
+void handle_response(int signal, siginfo_t *info, void *context)
 {
     if (signal == SIGILL)
     {
         std::cout << "Received response from the spy process.\n";
-        responded = true;
+        pid_t senderPID = info->si_pid;
+        std::cout << "Spionen of bourjois, western, anticommunist, visual studio/windows using scum detected with PID: " << senderPID << std::endl;
+        std::cout << "Sending SIGKILL to terminate the spy process.\n";
+        kill(senderPID, SIGKILL);
     }
 }
 
@@ -29,11 +23,12 @@ void send_signal_to_spy(int pid)
 {
     std::cout << "Sending SIGCONT to a process with PID: " << pid << std::endl;
     kill(pid, SIGCONT);
+    usleep(10000);
 }
 
 int main()
 {
-    std::ifstream file("postman.txt");
+    std::ifstream file("/home/mitani/linux-2024-25/hw17_back_to_the_ussr/postman.txt");
     std::vector<pid_t> pids;
 
     if (!file.is_open())
@@ -52,24 +47,20 @@ int main()
     }
     file.close();
 
-    std::cout << "Checking for spy processes...\n";
     struct sigaction sa{};
-    sa.sa_handler = handle_response;
+    sa.sa_sigaction = handle_response;
     sigemptyset(&sa.sa_mask);
-    sa.sa_flags = 0;
+    sa.sa_flags = SA_SIGINFO;
     sigaction(SIGILL, &sa, nullptr);
 
+    std::cout << "Checking for spy processes...\n";
     for (pid_t pid : pids)
     {
         std::string procPath = "/proc/" + std::to_string(pid);
-        if (access(procPath.c_str(), F_OK) == 0)
+        if (kill(pid,0) == 0)
         {
             std::cout << "Checking process with PID: " << pid << std::endl;
             send_signal_to_spy(pid);
-            usleep(10000);
-            if(responded)
-                handle_spy(pid);
-            responded = false;
         }
     }
 
